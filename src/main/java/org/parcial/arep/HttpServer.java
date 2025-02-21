@@ -56,6 +56,7 @@ public class HttpServer {
             }
 
             String path = firstLine.split(" ")[1];
+            path = path.replace("\"","");
             URI uri = new URI(path);
             String uriPath = uri.getPath();
             String query = uri.getQuery();
@@ -80,10 +81,11 @@ public class HttpServer {
                 + "Content-Type: application/json\r\n"
                 + "\r\n"; 
         String ans;
+        System.out.println("Query: " + query);
 
         String command = query.split("=")[1];
-        String[] params = command.split("\\(")[1].split("\\)")[0].split(",");
         if(command.startsWith("Class")){
+            String[] params = command.split("\\(")[1].split("\\)")[0].split(",");
             String className = params[0];
             Class c = Class.forName(className);
             ans = "{ \"" +
@@ -93,6 +95,7 @@ public class HttpServer {
                     + "\" }";
         }
         else if(command.startsWith("invoke")){
+            String[] params = command.split("\\(")[1].split("\\)")[0].split(",");
             String className = params[0];
             String methodName = params[1];
             Class<?> c = Class.forName(className);
@@ -102,6 +105,7 @@ public class HttpServer {
                     + "\" }";
         }
         else if(command.startsWith("unaryInvoke")){
+            String[] params = command.split("\\(")[1].split("\\)")[0].split(",");
             String className = params[0];
             String methodName = params[1];
             String paramType = params[2];
@@ -117,6 +121,7 @@ public class HttpServer {
                     + "\" }";
         }
         else if(command.startsWith("binaryInvoke")){
+            String[] params = command.split("\\(")[1].split("\\)")[0].split(",");
             String className = params[0];
             String methodName = params[1];
             String paramType = params[2];

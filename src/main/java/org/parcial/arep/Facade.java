@@ -62,7 +62,7 @@ public class Facade {
                 }
             }
 
-            // Answering the request
+            // Redirecting the request
             String method = firstLine.split(" ")[0];
             String path = firstLine.split(" ")[1];
             URI uri = new URI(path);
@@ -71,7 +71,6 @@ public class Facade {
                 outputLine = readIndex();
             }
             else if(path.startsWith("/consulta")){
-                System.out.println("In consulta");
                 outputLine = httpServerRequest(method, uri.getQuery());
             }
             else{
@@ -104,7 +103,7 @@ public class Facade {
 
     public static String httpServerRequest(String method, String query) throws IOException {
         // Connection to HttpServer class
-        URL obj = new URL(GET_URL + "/compreflex" + "?" + query);
+        URL obj = new URL(GET_URL + "/compreflex?" + query);
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
         con.setRequestMethod(method);
         con.setRequestProperty("User-Agent", USER_AGENT);
