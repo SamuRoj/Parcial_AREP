@@ -9,6 +9,20 @@ public class Facade {
     private static final String USER_AGENT = "Mozilla/5.0";
     private static final String GET_URL = "http://localhost:45000";
 
+    private static final String NOT_FOUND = "HTTP/1.1 404 NOT FOUND\r\n"
+            + "Content-Type: text/html\r\n"
+            + "\r\n"
+            + "<!DOCTYPE html>\n"
+            + "<html>\n"
+            + "<head>\n"
+            + "<meta charset=\"UTF-8\">\n"
+            + "<title>Error Page</title>\n"
+            + "</head>\n"
+            + "<body>\n"
+            + "<h1>El recurso solicitado no fue encontrado</h1>\n"
+            + "</body>\n"
+            + "</html>\n";
+
 
     public static void main(String[] args) throws Exception {
         ServerSocket serverSocket = null;
@@ -48,29 +62,20 @@ public class Facade {
                 }
             }
 
+            // Answering the request
             String method = firstLine.split(" ")[0];
             String path = firstLine.split(" ")[1];
+            URI uri = new URI(path);
 
             if(path.startsWith("/cliente")){
                 outputLine = readIndex();
             }
             else if(path.startsWith("/consulta")){
-
+                System.out.println("In consulta");
+                outputLine = httpServerRequest(method, uri.getQuery());
             }
             else{
-                outputLine = "HTTP/1.1 404 NOT FOUND\r\n"
-                        + "Content-Type: text/html\r\n"
-                        + "\r\n"
-                        + "<!DOCTYPE html>\n"
-                        + "<html>\n"
-                        + "<head>\n"
-                        + "<meta charset=\"UTF-8\">\n"
-                        + "<title>Error Page</title>\n"
-                        + "</head>\n"
-                        + "<body>\n"
-                        + "<h1>El recurso solicitado no fue encontrado</h1>\n"
-                        + "</body>\n"
-                        + "</html>\n";
+                outputLine = NOT_FOUND;
             }
 
             // Sending the answer of the request
@@ -82,13 +87,24 @@ public class Facade {
         serverSocket.close();
     }
 
-    private static String readIndex() {
+    private static String readIndex() throws IOException {
+        String header = "HTTP/1.1 200 OK\r\n"
+                + "Content-Type: text/html\r\n"
+                + "\r\n";
+        BufferedReader in = new BufferedReader(new FileReader("src/main/resources/index.html"));
+        String inputLine;
+        StringBuffer response = new StringBuffer();
 
+        while ((inputLine = in.readLine()) != null) {
+            response.append(inputLine).append("\n");
+        }
+        in.close();
+        return header + response;
     }
 
-    public static void httpServerRequest(String method, String path) throws IOException {
+    public static String httpServerRequest(String method, String query) throws IOException {
         // Connection to HttpServer class
-        URL obj = new URL(GET_URL);
+        URL obj = new URL(GET_URL + "/compreflex" + "?" + query);
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
         con.setRequestMethod(method);
         con.setRequestProperty("User-Agent", USER_AGENT);
@@ -97,23 +113,29 @@ public class Facade {
         int responseCode = con.getResponseCode();
         System.out.println(method + " Response Code :: " + responseCode);
 
+        String header;
+        String ans;
+
         if (responseCode == HttpURLConnection.HTTP_OK) { // success
-            BufferedReader in = new BufferedReader(new InputStreamReader(
-                    con.getInputStream()));
+            header = "HTTP/1.1 200 OK\r\n"
+                    + "Content-Type: text/html\r\n"
+                    + "\r\n";
+            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
             String inputLine;
             StringBuffer response = new StringBuffer();
 
             while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
+                response.append(inputLine).append("\n");
             }
+            ans = response.toString();
+            System.out.println(ans);
             in.close();
-
-            // print result
-            System.out.println(response);
         } else {
             System.out.println(method + " request not worked");
+            return NOT_FOUND;
         }
         System.out.println(method + " DONE");
+        return header + ans;
     }
 }
 
