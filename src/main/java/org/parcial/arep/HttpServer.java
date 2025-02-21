@@ -1,7 +1,9 @@
 package org.parcial.arep;
 
+import java.lang.reflect.Method;
 import java.net.*;
 import java.io.*;
+import java.util.Arrays;
 
 public class HttpServer {
 
@@ -73,8 +75,86 @@ public class HttpServer {
         serverSocket.close();
     }
 
-    private static String invokeMethod(String query) {
+    private static String invokeMethod(String query) throws Exception{
+        String header = "HTTP/1.1 200 OK\r\n"
+                + "Content-Type: application/json\r\n"
+                + "\r\n"; 
+        String ans;
 
-        return "";
+        String command = query.split("=")[1];
+        String[] params = command.split("\\(")[1].split("\\)")[0].split(",");
+        if(command.startsWith("Class")){
+            String className = params[0];
+            Class c = Class.forName(className);
+            ans = "{ \"" +
+                    "Fields\" : \"" + Arrays.toString(c.getDeclaredFields())
+                    + "\" , \"" +
+                    "Methods\" : \"" + Arrays.toString(c.getDeclaredMethods())
+                    + "\" }";
+        }
+        else if(command.startsWith("invoke")){
+            String className = params[0];
+            String methodName = params[1];
+            Class<?> c = Class.forName(className);
+            Method m = c.getMethod(methodName);
+            ans = "{ \"" +
+                    "response\" : \"" + m.invoke(null).toString()
+                    + "\" }";
+        }
+        else if(command.startsWith("unaryInvoke")){
+            String className = params[0];
+            String methodName = params[1];
+            String paramType = params[2];
+            String paramValue = params[3];
+
+            // Turning the strings into their proper classes
+            Class<?> c = Class.forName(className);
+            Class<?> paramTypeClass = obtainClassByType(paramType);
+            Object param = castParam(paramType, paramValue);
+            Method m = c.getMethod(methodName, paramTypeClass);
+            ans = "{ \"" +
+                    "response\" : \"" + m.invoke(null, param).toString()
+                    + "\" }";
+        }
+        else if(command.startsWith("binaryInvoke")){
+            String className = params[0];
+            String methodName = params[1];
+            String paramType = params[2];
+            String paramValue = params[3];
+            String paramType2 = params[4];
+            String paramValue2 = params[5];
+
+            // Turning the strings into their proper classes
+            Class<?> c = Class.forName(className);
+
+            // Param Classes
+            Class<?> paramTypeClass1 = obtainClassByType(paramType);
+            Class<?> paramTypeClass2 = obtainClassByType(paramType2);
+
+            // Casting params
+            Object param1 = castParam(paramType, paramValue);
+            Object param2 = castParam(paramType2, paramValue2);
+
+            Method m = c.getMethod(methodName, paramTypeClass1, paramTypeClass2);
+            ans = "{ \"" +
+                    "response\" : \"" + m.invoke(null, param1, param2).toString()
+                    + "\" }";
+        }
+        else{
+            return NOT_FOUND; 
+        }
+        return header + ans;
+    }
+
+    public static Class<?> obtainClassByType(String paramType){
+        if(paramType.equals("int")) return int.class;
+        if(paramType.equals("double")) return double.class;
+        return String.class;
+    }
+
+    public static Object castParam(String paramType, String paramValue){
+        if(paramType.equals("int")) return Integer.valueOf(paramValue);
+        if(paramType.equals("double")) return Double.valueOf(paramValue);
+        return paramValue;
     }
 }
